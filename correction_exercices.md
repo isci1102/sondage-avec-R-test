@@ -2,7 +2,7 @@
 
 ### Exercices théoriques
 
-   * [Chapitre 1](correction_exercices/demos1.pdf)
+   * [Chapitre 1](correction_exercices/Demonstration.pdf)
 
 ### Exercices sur R 
    
