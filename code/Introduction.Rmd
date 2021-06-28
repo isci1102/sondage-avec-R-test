@@ -1,0 +1,39 @@
+---
+title: "Chaptire 1 Introduction"
+output:
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    toc_float: true
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+---
+
+# Lecture fichier recensement
+```{r}
+rec <- read.csv("rec99htegne.csv",header=TRUE)
+dim(rec)
+names(rec)
+```
+# calcul total et variance logements vacants dans population
+
+```{r}
+sum(rec$LOGVAC)
+var(rec$LOGVAC)
+```
+
+# Lecture fichier agri
+```{r}
+agri <-read.csv("agri01.csv",header=TRUE)
+dim(agri)
+names(agri)
+```
+
+# Calcul pourcentage agriculteurs et variance dans population
+```{r}
+options(digits=3)
+100*mean(agri$AGRI)
+var(agri$AGRI)
+```
+
