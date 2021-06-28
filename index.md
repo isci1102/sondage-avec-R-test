@@ -1,4 +1,4 @@
-![Photo livre](DataScience2.jpeg)
+![Photo livre](image_livre.jpg)
 
 ## A propos du livre 
 
