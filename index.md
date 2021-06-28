@@ -23,4 +23,4 @@ Vous trouverez des exercices et leurs corrections détaillées , ainsi que des e
 	
 - [Lignes de code utilisées dans le livre](code.md)
 	
-## [Boutique en ligne](jevyuccrk.pdf)
+##  [Boutique en ligne](jevyuccrk.pdf){.btn .btn-success}
