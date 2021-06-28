@@ -19,7 +19,7 @@ Vous trouverez des exercices et leurs corrections détaillées , ainsi que des e
 
 - [Jeux de données](donnees.md)
 
-- [Proposition de correction des exercices](correction_exercices.md)
+- [Proposition de correction des exercices](correction_exos.md)
 	
 - [Lignes de code utilisées dans le livre](code.md)
 	
