@@ -1,0 +1,138 @@
+---
+title: "Correction exercices chapitre 2"
+output:
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    toc_float: true
+    number_sections: false  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango  # specifies the syntax highlighting style
+---
+
+```{r warning=FALSE, message=FALSE}
+require(sampling)
+require(survey)
+```
+
+
+# Exercice 1
+
+## Tirer un échantillon de 100 individus dans le fichier des personnes actives agri selon un plan SI
+
+```{r}
+agri <-read.csv("agri01.csv",header=TRUE)
+set.seed(123456)
+dim(agri)
+si.agri <- srswor(100,7104) # 1 tiré , 0 non tirés
+si.ech<-agri$AGRI[si.agri==1] # Valeur de la varible AGRI por les individus de l'échantillon
+si.ech
+```
+
+# Exercice 2
+
+## Tirer un échantillon d’individus dans le fichier des personnes actives agri selon un plan BE avec une taille moyenne d’échantillon égale à 100
+
+On veut n = 100 donc pi = n/N= 100/7104
+
+```{r}
+pi.agri <- 100/7104
+N.agri <- 7104 
+
+BE1 <- function(N,pi){
+  x <- runif(N) # tirage de N nombres uniformes dans ]0,1[
+  s <- as.numeric(x<pi) # sélection individus
+  s
+}
+
+be.agri<-BE1(N.agri ,pi.agri)
+be.ech<-agri$AGRI[be.agri==1] #Valeur de la varible AGRI por les individus de l'échantillon
+be.ech
+```
+
+# Exercice 3
+
+## 1. Reproduire les simulations Monte Carlo de la section 2.4 avec pour objectif l’estimation de la proportion de personnes actives travaillant dans l’agriculture, la sylviculture ou la pêche pour une taille d’échantillon moyenne de 100.
+
+La proprtion réelle de personnes actives dans l’agriculture, la sylviculture ou la pêche
+```{r}
+nrow(agri[agri$AGRI== 1,])/7104 #Réelle proportion
+```
+Création d'une variable CON _N avec les identifiants de sindividus
+```{r}
+id.agri <- rownames(agri)
+agri <- cbind(CODE_N=id.agri, agri)
+```
+
+### PLAN SI
+
+#### Comparaison sur 10000 simulations 
+
+Vecteur où seront sauvegardées les estimations
+```{r}
+nb.simul <- matrix(1:10000,10000,1) 
+est.si <- matrix(1,10000,1) 
+```
+
+Realisation des simulations :
+```{r}
+for (i in 1:10000) {
+  si.agri <- srswor(100,7104)
+  ech.si <- svydesign(id=~CODE_N, weights=rep(7104/100,100),
+                      fpc=rep(100/7104,100),data=agri[which(si.agri==1),])
+  est.si[i] <- svytotal(~AGRI,ech.si)[1]
+}
+```
+
+Moyenne des proprotions obtenues avec les 10000 simulation
+```{r}
+mean(est.si/7104)
+```
+
+Coefficient de variation 
+```{r}
+cv.si<-sd(est.si)/mean(est.si)
+cv.si
+```
+
+### PLAN BE
+
+#### Comparaison sur 10000 simulations 
+
+```{r}
+est.be <- matrix(1,10000,1)
+n.be <- matrix(1,10000,1)
+N <- 7104
+for (i in 1:10000){
+  be.agri <- BE1(7104,100/7104)
+  n.be[i] <- length(which(be.agri==1))
+  sample <- agri[which(be.agri==1),]
+  est.be[i] <- N/n.be[i] * sum(sample$AGRI) #HT estimate of the total
+}
+```
+
+Moyenne des proprotions obtenues avec les 10000 simulation
+```{r}
+mean(est.be/7104)
+```
+Coefficient de variation 
+```{r}
+cv.be <- sd(est.be)/mean(est.be)
+cv.be
+```
+
+
+## 2. Comparer les coefficients de variation du plan SI et BE.
+
+Plan de bernoulli
+```{r}
+cv.be
+```
+
+Plan simple
+```{r}
+cv.si
+```
+On obtient legèrement de meilleures estimation avec le plan de bernoulli
+
+## 3. Calculer l’effet plan du plan BE.
