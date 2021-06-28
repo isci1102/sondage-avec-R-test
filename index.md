@@ -13,7 +13,7 @@
 - [Anne Ruiz Gazen](https://www.tse-fr.eu/people/anne-ruiz-gazen)
 
 
-## Pour mieux travailler avce le livre
+## Pour mieux travailler avec le livre
 
 Vous trouverez des exercices et leurs corrections détaillées , ainsi que des explications et démonstrations de notions abordées dans le livre !
 
@@ -23,4 +23,4 @@ Vous trouverez des exercices et leurs corrections détaillées , ainsi que des e
 	
 - [Lignes de code utilisées dans le livre](code.md)
 	
-##  [Boutique en ligne](jevyuccrk.pdf){.btn .btn-success}
+##  [Boutique en ligne](jevyuccrk.pdf)
