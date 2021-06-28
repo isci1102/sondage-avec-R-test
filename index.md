@@ -1,5 +1,3 @@
-# Sondage avec R
-
 ![Photo livre](DataScience2.jpeg)
 
 ## A propos du livre 
