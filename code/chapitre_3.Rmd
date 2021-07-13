@@ -1,0 +1,340 @@
+---
+title: 'Chapitre 3 : Plans de sondage à probabilités inégales'
+output:
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    toc_float: true
+    number_sections: true  ## if you want number sections at each table header
+    theme: united  # many options for theme, this one is my favorite.
+    highlight: tango
+---
+
+```{r warning=FALSE, message=FALSE}
+require(sampling)
+require(survey)
+require("tidyverse") ###pour ggplot
+library('sampling')
+library(ggplot2)
+
+```
+
+
+# Lecture des données
+
+```{r}
+data(rec99)
+attach(rec99)
+```
+
+
+```{r}
+set.seed(123456)
+```
+
+# Plan multinomial
+
+Taille de la population 
+
+```{r}
+N<-length(LOG)
+N
+```
+
+**Total de logement des communes** : la variable LOG () est utilisée comme variable ... (x) Car elles est positivement correlée au nombre de logements vacants
+```{r}
+tLOG<-sum(LOG)
+pk<-LOG/tLOG # Probailité de ..
+```
+
+
+Taille de l'echantilon
+```{r}
+m<-70
+```
+
+## Estimation d’un total et de la variance de l’estimateur HT 
+
+
+```{r}
+R<-UPmultinomial(m*pk)
+sum(R)
+```
+Indices des indivisus selectionnés dans l'echantillon
+```{r}
+s<-rep((1:N)[R!=0], R[R!=0])
+s
+```
+
+
+Calcul de l'estimateur de Hansen-Hurwitz  du total de logements vacants
+
+```{r}
+LOGVAC.HH<-sum((R*LOGVAC/pk))/m
+LOGVAC.HH
+```
+
+Calcul de la variance de l'estimateur de Hansen-Hurwitz  du total de logements vacants
+
+```{r}
+var.est.HH<-sum(R*(LOGVAC/pk-LOGVAC.HH)^2)/(m*(m-1))
+var.est.HH
+```
+
+Intervalle de confiance à 95% pour le total de logements vacants 
+
+```{r}
+c(LOGVAC.HH-qnorm(0.975)*sqrt(var.est.HH),LOGVAC.HH+qnorm(0.975)*sqrt(var.est.HH))
+```
+
+Valeur réelle du nombre de logements vacants
+```{r}
+sum(LOGVAC)
+```
+## Estimation à l'aide la fonction svydesign
+
+On ajoute une colonne contenant le poid de chaque observation au dataframe. On stocke ensuite dans *recs* les observations selectionnées lors de l'echantillonnage.
+
+```{r}
+recs<-cbind.data.frame(rec99, poids=1/(m*pk))
+recs<-recs[s,]
+```
+Initialisation de la fonction svydesign
+```{r}
+design.pps<-svydesign(id=~1, weights=recs$poids, data=recs)
+```
+
+Estimateur du total de logements vacants
+```{r}
+res.pps<-svytotal(~LOGVAC, design.pps)
+print(ftable(res.pps),digits=5)
+```
+
+# Calcul des probabilités d'inclusion d'ordre 1
+
+Taille souhaitée de l'échantillon 
+```{r}
+n<-70
+```
+
+Calcule des probabilités d'inclusion. Il ya donc 7 communes pour les quelles les probabilités d'inclusion sont égales à 1.
+
+```{r}
+pik<-inclusionprobabilities(LOG,n)
+rec99[pik==1,c(2,5)]
+```
+
+# Plan de Poisson
+
+Echantillon de taille n=70, calcul des probabilités d'inclusion par la fonction **inclusionprobabilities** 
+```{r}
+n<-70
+pik<-inclusionprobabilities(LOG,n)
+```
+
+On tire l'échantillon s
+```{r}
+s<-UPpoisson(pik)
+sum(s)
+```
+
+On verifie que l'esperance de  **ns** la taille de l'échantillon est bien 70 . 
+
+```{r}
+ns<-replicate(10000,
+              {ss<-UPpoisson(pik)
+              sum(ss)})
+mean(ns)
+```
+
+Calcule de l'estimateur de Horvitz-Thompson du total des logements vacants (la variable d’intérêt ys) à l’aide de la fonction HTestimator(.), son estimateur de la variance
+
+```{r}
+ys<-LOGVAC[s==1]
+piks<-pik[s==1]
+LOGVAC.HT<-HTestimator(ys,piks)
+LOGVAC.HT   
+
+var.est.HT<-sum((1-piks)*(ys^2)/(piks^2))
+var.est.HT
+```
+Calcule de l'estimateur de Horvitz-Thompson du total des logements vacants par la méthode ???
+
+```{r}
+pikl<-outer(pik,pik,"*")
+diag(pikl)<-pik
+pikls<-pikl[s==1,s==1]
+varHT(ys,pikls,method=1)
+```
+Intervalle de confiance à 95% pour le total de
+la population
+
+```{r}
+c(LOGVAC.HT-qnorm(0.975)*sqrt(var.est.HT),LOGVAC.HT+qnorm(0.975)*sqrt(var.est.HT))
+sum(LOGVAC)
+```
+
+# Plan systèmatique à prob. inégales
+
+On veut tirer un échantillon s, avec **n = 70**
+à l’aide du plan systématique et estimer le total de logements vacants à l’aide de l’estimateur de **Horvitz-Thompson** (fonction HTestimator(.)).
+
+La fonction UPsystematicpi2(.) calcule les probabilités d’inclusion d’ordre deux pour ce plan
+
+```{r}
+n<-70
+pikl<-UPsystematicpi2(pik)
+sum(pikl==0)
+```
+
+On tire l'echantillon s
+```{r}
+s<-UPsystematic(pik)
+sum(s)
+```
+
+Indices **ys**, probabilités d'inclusion du premier ordre **piks**, et probabilités d'inclusion du second ordre **pikls** des individus selectionnés
+
+```{r}
+ys<-LOGVAC[s==1]
+piks<-pik[s==1]
+pikls<-pikl[s==1,s==1]
+```
+
+Sur l’échantillon tiré, les conditions dites de Yates-Grundy-Sen ne sont pas respectées, car ?? valeurs de pi_kl - pi_k pi_l sont négatives. Par conséquent, on obtient une valeur négative pour l’estimateur de la variance de Yates-Grundy-Sen (varHT(.)).
+
+Pour pallier à ce problème, l’estimateur de Deville est appliqué. Cet estimateur de la variance biaisé est obtenu grâce à la fonction varest(.).
+
+```{r}
+LOGVAC.HT<-HTestimator(ys,piks) # Estimateur HT du total
+LOGVAC.HT
+
+varHT(ys,pikls,method=2)
+
+var.approx.HT<-varest(ys,pik=piks)
+var.approx.HT
+```
+
+# Plan de Poisson conditionnel à la taille
+
+ Les probabilités πk sont proportionnelles à la variable LOG, n = 70 et y est la variable LOGVAC. Les probabilités d’inclusion d’ordre un pour ce plan ne sont pas égales aux probabilités (πk) utilisées pour tirer un échantillon à l’aide de la fonction UPmaxentropy(.).
+ 
+Les robabilités d’inclusion d’ordre un pour ce plan sont calculés à l’aide de la fonction UPMEpiktildefrompik(.). 
+
+Les probabilités d’inclusion d’ordre deux pour le plan de Poisson conditionnel à la taille sont calculées à l’aide de la fonction UPmaxentropypi2(.). 
+
+Au niveau de l’échantillon, les probabilités d’inclusion d’ordre un et deux sont calculées respectivement à l’aide de piks<-piktilde[s==1] et pikls<-pikl[s==1,s==1].
+
+```{r}
+set.seed(12345)
+s<-UPmaxentropy(pik)
+piktilde<-pik
+piktilde[pik!=1]<-UPMEpiktildefrompik(pik[pik!=1])
+ys<-LOGVAC[s==1]
+piktildes<-piktilde[s==1]
+pikltilde<-UPmaxentropypi2(pik)
+pikltildes<-pikltilde[s==1,s==1]
+```
+
+Calcul de l’estimateur de Horvitz-Thompson, sa variance estimée 
+
+```{r}
+LOGVAC.HT<-HTestimator(ys,piktildes)
+LOGVAC.HT
+V.HT<-varHT(ys,pikltildes,method=2)
+V.HT
+```
+
+
+Intervalle de confiance à 95% du total de la population
+
+```{r}
+c(LOGVAC.HT-qnorm(0.975)*sqrt(V.HT),
+  LOGVAC.HT+qnorm(0.975)*sqrt(V.HT))
+sum(LOGVAC)
+
+```
+# Simulations de Monte-Carlo avec plans diff
+
+Taille de la population **N**, de l'échantillon **n**, et nombre de simulation **n.sim = 10 000**
+
+```{r}
+N<-nrow(rec99)
+n<-70
+n.sim<-10000
+```
+
+y = Nombre de logement vacant et on calcul les probailités d'incluson pour le  plan simple, le plan de poisson et le plan systématique. 
+
+```{r}
+y<-LOGVAC
+pik<-inclusionprobabilities(LOG,n)
+pik1<-rep(n/N,N)
+```
+
+On réalise les simulations des l'estimateur de Horvitz-Thompson pour chaque plan 
+
+```{r}
+r1<-replicate(n.sim, srswor(n,N))
+ht1<-apply(r1, 2, FUN=function(s,y,pik1)
+                  HTestimator(y[s==1],pik1[s==1]),y,pik1)
+r2<-replicate(n.sim, UPpoisson(pik))
+ht2<-apply(r2, 2, FUN=function(s,y,pik)
+                  HTestimator(y[s==1],pik[s==1]),y,pik)
+r3<-replicate(n.sim, UPsystematic(pik))
+ht3<-apply(r3, 2, FUN=function(s,y,pik)
+                  HTestimator(y[s==1],pik[s==1]),y,pik)
+```
+
+Boîtes à moustaches des estimateurs de Horvitz-Thompson correspondants aux plans simple, Poisson et systématique 
+
+```{r}
+boxplot(ht1,ht2,ht3, names = c('Simple', 'Poisson', 'Systématique'))
+
+```
+# Utilisation de la fonction sample() à probabilités inégales 
+
+## Avec sample()
+
+```{r}
+set.seed(12345)
+
+n.sim<-10000
+prob<-matrix(0,nrow=n.sim,ncol=N)
+for(i in 1:n.sim)
+{
+s<-sample(1:N,n,p=pik)
+prob[i,1:N]<-(1:N %in% s)
+}
+pik_estimées<-apply(prob,2,mean)
+max(pik_estimées/pik)
+```
+
+## Avec UPpoisson()
+
+```{r}
+set.seed(12345)
+
+prob<-matrix(0,nrow=n.sim,ncol=N)
+for(i in 1:n.sim)
+{
+s<-UPpoisson(pik)
+prob[i,1:N]<-s
+}
+pik_estimées1<-apply(prob,2,mean)
+max(pik_estimées1/pik)
+```
+
+Boîtes à moustaches des probabilités estimées avec la fonction sample(.) et probabilités réelles 
+
+```{r}
+boxplot(pik_estimées,pik, names = c('prob estimées', 'prob réelles'))
+```
+
+Boîtes à moustaches des probabilités estimées avec la fonction UPpoisson(.) et probabilités réelles 
+
+```{r}
+boxplot(pik_estimées1,pik,names = c('prob estimées', 'prob réelles'))
+```
+
+
